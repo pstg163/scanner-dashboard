@@ -139,7 +139,7 @@ export function playChime(kind: Exclude<ChimeKind, 'none'>): void {
     tone(ctx, 1175, start, 0.16, 0.05, 'sine')
     return
   }
-  tone(ctx, 523, start, 0.16, 0.05, 'sine')
+  tone(ctx, 523, start, 0.18, 0.1, 'sine')
 }
 
 export function vibrateFor(priority: number | null): void {

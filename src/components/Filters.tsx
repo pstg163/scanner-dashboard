@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useId, useState } from 'react'
 import { RANGE_LABEL } from '../lib/alerts'
-import { readMinorChime, writeMinorChime, type MinorChime } from '../lib/chime'
+import { playChime, readMinorChime, unlockAudio, writeMinorChime, type MinorChime } from '../lib/chime'
 import { isMockMode } from '../lib/mockMode'
 import { useAlerts } from '../state/alerts'
 import type { SourceType, TimeRange } from '../types'
@@ -133,6 +133,24 @@ function MinorSoundSetting() {
   )
 }
 
+function TestSounds() {
+  function test(kind: 'urgent' | 'ding' | 'soft') {
+    unlockAudio()
+    playChime(kind)
+  }
+  return (
+    <fieldset>
+      <legend>Test sound</legend>
+      <div className="choice-grid">
+        <button type="button" className="choice" onClick={() => test('urgent')}>Urgent</button>
+        <button type="button" className="choice" onClick={() => test('ding')}>Serious</button>
+        <button type="button" className="choice" onClick={() => test('soft')}>Minor</button>
+      </div>
+      <p className="quiet">Plays even when muted, so you can check your volume.</p>
+    </fieldset>
+  )
+}
+
 function FilterSheet({ onClose }: { onClose: () => void }) {
   const { filters, setFilters, clearFilters, categories, counties } = useAlerts()
   const titleId = useId()
@@ -258,6 +276,7 @@ function FilterSheet({ onClose }: { onClose: () => void }) {
             {categories.length === 0 && <p className="quiet">Categories show up as alerts load.</p>}
           </fieldset>
           <MinorSoundSetting />
+          <TestSounds />
           <button type="button" className="btn secondary" onClick={clearFilters}>
             Clear filters
           </button>
