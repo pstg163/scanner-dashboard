@@ -11,6 +11,7 @@ import {
   placeLine,
   priorityMeta,
   relatedAlerts,
+  listenLiveUrl,
   sourceButtonLabel,
   sourceLabel,
 } from '../lib/alerts'
@@ -109,6 +110,7 @@ export function DetailPage() {
     .split(',')
     .map((tag) => tag.trim())
     .filter(Boolean)
+  const listen = listenLiveUrl(alert)
 
   return (
     <article className="detail">
@@ -151,10 +153,19 @@ export function DetailPage() {
 
       <ClipPlayer key={alert.id} id={alert.id} clipPath={alert.clip_path} />
 
-      {alert.source_url && (
-        <a className="btn" href={alert.source_url} target="_blank" rel="noopener noreferrer">
-          {sourceButtonLabel(alert)}
-        </a>
+      {(alert.source_url || listen) && (
+        <div className="detail-actions">
+          {alert.source_url && (
+            <a className="btn" href={alert.source_url} target="_blank" rel="noopener noreferrer">
+              {sourceButtonLabel(alert)}
+            </a>
+          )}
+          {listen && listen !== alert.source_url && (
+            <a className="btn secondary" href={listen} target="_blank" rel="noopener noreferrer">
+              Listen live
+            </a>
+          )}
+        </div>
       )}
 
       <section>

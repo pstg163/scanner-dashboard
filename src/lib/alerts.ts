@@ -148,6 +148,16 @@ export function sourceButtonLabel(alert: Alert): string {
   }
 }
 
+/** Broadcastify listen page for CAD/RSS alerts (or an explicit listen_url). */
+export function listenLiveUrl(alert: Alert): string | null {
+  const explicit = alert.listen_url?.trim()
+  if (explicit) return explicit
+  if (alert.source_type === 'radio') return null
+  const id = alert.source_feed_id?.trim()
+  if (id && /^\d+$/.test(id)) return `https://www.broadcastify.com/listen/feed/${id}`
+  return null
+}
+
 export function formatRelative(iso: string, now = Date.now()): string {
   const when = Date.parse(iso)
   if (!Number.isFinite(when)) return ''

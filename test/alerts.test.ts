@@ -5,6 +5,7 @@ import {
   formatRelative,
   mergeAlerts,
   nextPollCursor,
+  listenLiveUrl,
   priorityMeta,
 } from '../src/lib/alerts.ts'
 import { isPin } from '../src/lib/pin.ts'
@@ -112,5 +113,45 @@ describe('formatters and pin', () => {
     assert.equal(isPin('12345'), false)
     assert.equal(isPin('1234567'), false)
     assert.equal(isPin('12a456'), false)
+  })
+})
+
+describe('listenLiveUrl', () => {
+  it('uses an explicit listen_url', () => {
+    const alert = row({
+      id: 'cad-1',
+      event_time: '2026-11-17T20:00:00.000Z',
+      source_type: 'cad',
+      listen_url: 'https://www.broadcastify.com/listen/feed/45172',
+    })
+    assert.equal(listenLiveUrl(alert), 'https://www.broadcastify.com/listen/feed/45172')
+  })
+
+  it('builds a listen link from source_feed_id on CAD and RSS alerts', () => {
+    const cad = row({
+      id: 'cad-2',
+      event_time: '2026-11-17T20:00:00.000Z',
+      source_type: 'cad',
+      source_feed_id: '41110',
+    })
+    assert.equal(listenLiveUrl(cad), 'https://www.broadcastify.com/listen/feed/41110')
+    const rss = row({
+      id: 'rss-1',
+      event_time: '2026-11-17T20:00:00.000Z',
+      source_type: 'rss',
+      source_feed_id: '12174',
+    })
+    assert.equal(listenLiveUrl(rss), 'https://www.broadcastify.com/listen/feed/12174')
+  })
+
+  it('does not invent a second listen link for radio alerts', () => {
+    const alert = row({
+      id: 'radio-1',
+      event_time: '2026-11-17T20:00:00.000Z',
+      source_type: 'radio',
+      source_feed_id: '43015',
+      source_url: 'https://www.broadcastify.com/listen/feed/43015',
+    })
+    assert.equal(listenLiveUrl(alert), null)
   })
 })
