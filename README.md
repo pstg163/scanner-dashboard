@@ -39,6 +39,24 @@ npm run build
 
 `npm run build` writes a static site to `dist/`.
 
+## Live site
+
+The dashboard is hosted on GitHub Pages:
+
+https://pstg163.github.io/scanner-dashboard/
+
+Deep link example: https://pstg163.github.io/scanner-dashboard/alert/1794931957603-36465
+
+The production build uses `VITE_BASE_PATH=/scanner-dashboard/`. Unknown paths, including `/alert/<id>`,
+are served from `404.html` (a copy of `index.html`). GitHub Pages returns HTTP 404 for those URLs, but
+the body is the SPA and the client router still opens the alert after the PIN pad.
+
+Pages is currently published from the `gh-pages` branch (a prebuilt `dist`). A GitHub Actions
+workflow that builds on each push to `main` is checked in at `docs/github-pages-workflow.yml`. It
+is not under `.github/workflows/` yet because the token that created this repo lacks the `workflow`
+scope. After that scope is granted, copy it to `.github/workflows/pages.yml` and set Pages source
+to GitHub Actions.
+
 ## Deploy
 
 This repo is a static Vite build. On Vercel:
