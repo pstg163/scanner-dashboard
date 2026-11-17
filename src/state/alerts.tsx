@@ -210,7 +210,8 @@ export function AlertsProvider({ pin, children }: { pin: string; children: React
     }
 
     async function poll() {
-      if (stopped || document.hidden) return
+      // Keep polling in background tabs so new alerts still chime while you're in another tab.
+      if (stopped) return
       if (!pollAfterRef.current) return
       if (lockedUntilRef.current && Date.now() < lockedUntilRef.current) return
       setRefreshing(true)
