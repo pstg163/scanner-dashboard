@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { getApi } from '../api'
 import { errorMessage, isAbortError, isDashboardError } from '../api/dashboard'
 import { AlertMap } from '../components/AlertMap'
@@ -16,14 +16,18 @@ import {
   sourceLabel,
 } from '../lib/alerts'
 import { CategoryMark } from '../components/icons'
-import { alertMatchesCode, isShortAlertCode } from '../lib/shortId'
+import { alertMatchesCode, alertShortCode, deepLinkId } from '../lib/shortId'
 import { useAlerts } from '../state/alerts'
 import { useSession } from '../state/session'
 import type { Alert } from '../types'
 
 export function DetailPage() {
   const params = useParams()
-  const id = params.id ?? ''
+  const [search] = useSearchParams()
+  const id =
+    deepLinkId(`?${search.toString()}`, typeof window === 'undefined' ? '' : window.location.hash) ||
+    params.id ||
+    ''
   const navigate = useNavigate()
   const { alerts, now } = useAlerts()
   const { pin, kickout, lockFor } = useSession()
@@ -74,10 +78,14 @@ export function DetailPage() {
   }, [pin, id, kickout, lockFor])
 
   useEffect(() => {
-    if (phase === 'ready' && alert && alert.id && alert.id !== id && isShortAlertCode(id)) {
-      navigate(`/alert/${encodeURIComponent(alert.id)}`, { replace: true })
-    }
-  }, [phase, alert, id, navigate])
+    if (phase !== 'ready' || !alert?.id) return
+    const code = alertShortCode(alert.id)
+    if (!code) return
+    const current = deepLinkId(`?${search.toString()}`, window.location.hash)
+    if (current && (current === code || current === alert.id || alertMatchesCode(alert.id, current))) return
+    // Path-based /a/ and /alert/ links 404 on GitHub Pages. Move to the 200-OK query URL.
+    navigate(`/?a=${encodeURIComponent(code)}`, { replace: true })
+  }, [phase, alert, search, navigate])
 
   useEffect(() => {
     const title = alert?.title ? `${alert.title} · Scanner Bot` : 'Scanner Bot'

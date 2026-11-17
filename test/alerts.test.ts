@@ -9,7 +9,7 @@ import {
   priorityMeta,
 } from '../src/lib/alerts.ts'
 import { isPin } from '../src/lib/pin.ts'
-import { alertMatchesCode, alertShortCode, isShortAlertCode } from '../src/lib/shortId.ts'
+import { alertMatchesCode, alertQueryPath, alertShortCode, deepLinkId, isShortAlertCode } from '../src/lib/shortId.ts'
 import type { Alert } from '../src/types.ts'
 
 function row(partial: Partial<Alert> & Pick<Alert, 'id' | 'event_time'>): Alert {
@@ -177,5 +177,14 @@ describe('short alert codes', () => {
     assert.equal(alertMatchesCode('1794945386471-12a33337', '12a33337'), true)
     assert.equal(alertMatchesCode('1794945386471-12a33337', '1794945386471-12a33337'), true)
     assert.equal(alertMatchesCode('1794945386471-12a33337', 'deadbeef'), false)
+  })
+
+  it('reads HTTP 200 query and hash deep links', () => {
+    assert.equal(alertQueryPath('12a33337'), '/?a=12a33337')
+    assert.equal(deepLinkId('?a=12a33337'), '12a33337')
+    assert.equal(deepLinkId('?alert=1794945386471-12a33337'), '1794945386471-12a33337')
+    assert.equal(deepLinkId('', '#/a/12a33337'), '12a33337')
+    assert.equal(deepLinkId('', '#/alert/1794945386471-12a33337'), '1794945386471-12a33337')
+    assert.equal(deepLinkId(''), null)
   })
 })

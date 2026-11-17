@@ -8,7 +8,8 @@
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview",
-    "test": "node --experimental-strip-types --test test/*.test.ts"
+    "test": "node --experimental-strip-types --test test/*.test.ts",
+    "build:pages": "VITE_BASE_PATH=/scanner-dashboard/ tsc -b && VITE_BASE_PATH=/scanner-dashboard/ vite build && cp dist/index.html dist/404.html"
   },
   "dependencies": {
     "leaflet": "^1.9.4",

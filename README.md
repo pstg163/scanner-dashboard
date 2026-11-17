@@ -2,25 +2,26 @@
 
 Mobile dashboard for live police, fire, and EMS alerts in Ontario, Seneca, Wayne, Yates, Monroe, Cayuga, and Onondaga counties. It is a static single-page app: a PIN gate, a live alert list, a per-alert page, and an OpenStreetMap view.
 
-Deep links use these paths, after `VITE_BASE_PATH` when the app is not hosted at the domain root:
+Deep links should use a query on the site root, which GitHub Pages (and other static hosts) serve
+as `index.html` with HTTP 200. Path-only routes such as `/alert/<id>` and `/a/<short-code>` fall
+back to `404.html` and return HTTP 404; some in-app browsers, including GroupMe on iPhone, treat
+that as an error and show a blank page.
 
 ```text
-/alert/<id>
-/a/<short-code>
+/?a=<short-code>
+/?alert=<id>
 ```
 
-`<id>` is the text primary key on `public.alerts` (`<millis>-<8 hex>`). `/a/<short-code>` is a short
-form that uses that 8-character suffix, so GroupMe can show a tidier link. The dashboard and its
-edge function resolve the suffix to the full alert (most recent match if two ever collide). At the
-root of a host, a push notification should open:
+`<id>` is the text primary key on `public.alerts` (`<millis>-<8 hex>`). `<short-code>` is that
+8-character suffix. The dashboard and its edge function resolve the suffix to the full alert
+(most recent match if two ever collide). After the PIN pad, the app opens that alert and stays
+on the `/?a=` URL so a refresh still returns 200. At the root of a host, a notification should open:
 
 ```text
-https://<your-host>/alert/1794931957603-36465
-https://<your-host>/a/36465abc
+https://<your-host>/?a=36465abc
 ```
 
-Under a subpath such as `/scanner/`, the same alert is `https://<your-host>/scanner/alert/1794931957603-36465`
-or `https://<your-host>/scanner/a/36465abc`.
+Under a subpath such as `/scanner/`, the same alert is `https://<your-host>/scanner/?a=36465abc`.
 
 The phone shows the PIN keypad first if this device has not been unlocked. After a correct PIN, that exact alert opens. Refreshing the URL still loads the app because unknown paths fall back to `index.html`.
 
@@ -41,6 +42,8 @@ While `npm run dev` is running, [http://127.0.0.1:41731/?mock=1](http://127.0.0.
 ```bash
 npm test
 npm run build
+# GitHub Pages (must set the repo subpath; do not use the .env Supabase base)
+npm run build:pages
 ```
 
 `npm run build` writes a static site to `dist/`.
@@ -51,12 +54,12 @@ The dashboard is hosted on GitHub Pages:
 
 https://pstg163.github.io/scanner-dashboard/
 
-Deep link example: https://pstg163.github.io/scanner-dashboard/alert/1794931957603-36465
-Short link example: https://pstg163.github.io/scanner-dashboard/a/36465abc
+Deep link example: https://pstg163.github.io/scanner-dashboard/?a=36465abc
 
-The production build uses `VITE_BASE_PATH=/scanner-dashboard/`. Unknown paths, including `/alert/<id>`
-and `/a/<short-code>`, are served from `404.html` (a copy of `index.html`). GitHub Pages returns HTTP 404
-for those URLs, but the body is the SPA and the client router still opens the alert after the PIN pad.
+The production build uses `VITE_BASE_PATH=/scanner-dashboard/`. Always set that when building for
+GitHub Pages (`npm run build:pages`); the default `.env` base is for the Supabase web function and
+will leave the Pages site blank. Unknown paths still fall back to `404.html`, but notification
+links should use `/?a=<short-code>` so the response is HTTP 200.
 
 Pages is currently published from the `gh-pages` branch (a prebuilt `dist`). A GitHub Actions
 workflow that builds on each push to `main` is checked in at `docs/github-pages-workflow.yml`. It
