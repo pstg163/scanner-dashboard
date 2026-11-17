@@ -9,7 +9,7 @@ import {
   type ReactNode,
 } from 'react'
 import { getApi } from '../api'
-import { errorMessage, isAbortError, isDashboardError } from '../api/dashboard'
+import { errorMessage, isAbortError } from '../api/dashboard'
 import {
   MAX_DRAIN_PAGES,
   PAGE_LIMIT,
@@ -22,7 +22,6 @@ import {
   nextPollCursor,
 } from '../lib/alerts'
 import { signalNewAlerts, unseenAlerts } from '../lib/chime'
-import { useSession } from './session'
 import type { Alert, FeedFilters, ListParams } from '../types'
 
 const DEFAULT_FILTERS: FeedFilters = {
@@ -53,8 +52,7 @@ type AlertsValue = {
 
 const AlertsContext = createContext<AlertsValue | null>(null)
 
-export function AlertsProvider({ pin, children }: { pin: string; children: ReactNode }) {
-  const { kickout, lockFor, lockedUntil } = useSession()
+export function AlertsProvider({ children }: { children: ReactNode }) {
   const [alerts, setAlerts] = useState<Alert[]>([])
   const [filters, setFiltersState] = useState<FeedFilters>(DEFAULT_FILTERS)
   const [categories, setCategories] = useState<string[]>([])
@@ -69,22 +67,11 @@ export function AlertsProvider({ pin, children }: { pin: string; children: React
   const pollAfterRef = useRef<string | null>(null)
   const hasDataRef = useRef(false)
   const knownIdsRef = useRef<Set<string>>(new Set())
-  const lockedUntilRef = useRef<number | null>(lockedUntil)
-  useEffect(() => {
-    lockedUntilRef.current = lockedUntil
-  }, [lockedUntil])
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(Date.now()), 15_000)
     return () => window.clearInterval(timer)
   }, [])
-
-  useEffect(() => {
-    if (!lockedUntil) return
-    const delay = Math.max(0, lockedUntil - Date.now()) + 250
-    const timer = window.setTimeout(() => setReloadToken((token) => token + 1), delay)
-    return () => window.clearTimeout(timer)
-  }, [lockedUntil])
 
   useEffect(() => {
     const controller = new AbortController()
@@ -157,7 +144,6 @@ export function AlertsProvider({ pin, children }: { pin: string; children: React
         let pageMode = mode
         for (let page = 0; page < MAX_DRAIN_PAGES; page += 1) {
           const result = await api.list(
-            pin,
             { limit: PAGE_LIMIT, since: cursor, ...server },
             controller.signal,
           )
@@ -181,16 +167,6 @@ export function AlertsProvider({ pin, children }: { pin: string; children: React
 
     function fail(err: unknown) {
       if (stopped || isAbortError(err)) return
-      if (isDashboardError(err) && (err.status === 401 || err.status === 403)) {
-        kickout("That PIN wasn't accepted.")
-        return
-      }
-      if (isDashboardError(err) && err.status === 429) {
-        lockFor(err.retryAfter ?? 900)
-        setError('Too many attempts. Paused until the lock clears.')
-        setStatus(hasDataRef.current ? 'ready' : 'error')
-        return
-      }
       setError(errorMessage(err))
       setStatus(hasDataRef.current ? 'ready' : 'error')
     }
@@ -213,7 +189,6 @@ export function AlertsProvider({ pin, children }: { pin: string; children: React
       // Keep polling in background tabs so new alerts still chime while you're in another tab.
       if (stopped) return
       if (!pollAfterRef.current) return
-      if (lockedUntilRef.current && Date.now() < lockedUntilRef.current) return
       setRefreshing(true)
       try {
         await drain(pollAfterRef.current, 'merge', true)
@@ -241,14 +216,11 @@ export function AlertsProvider({ pin, children }: { pin: string; children: React
       document.removeEventListener('visibilitychange', onVisible)
     }
   }, [
-    pin,
     filters.county,
     filters.category,
     filters.priority,
     filters.source,
     reloadToken,
-    kickout,
-    lockFor,
   ])
 
   const setFilters = useCallback((patch: Partial<FeedFilters>) => {

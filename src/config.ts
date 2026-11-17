@@ -12,9 +12,8 @@ export const PAGE_LIMIT = 100
 
 export const MAX_DRAIN_PAGES = 20
 
-export function dashboardHeaders(pin: string): Headers {
+export function dashboardHeaders(): Headers {
   const headers = new Headers()
-  headers.set('X-Dashboard-Pin', pin)
   if (import.meta.env.VITE_SUPABASE_USE_APIKEY === 'true' && publishableKey) {
     headers.set('apikey', publishableKey)
     headers.set('Authorization', `Bearer ${publishableKey}`)

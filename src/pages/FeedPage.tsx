@@ -1,31 +1,14 @@
 import { FeedFilters } from '../components/Filters'
 import { AlertCard } from '../components/AlertCard'
-import { formatRemain } from '../lib/alerts'
 import { useAlerts } from '../state/alerts'
-import { useSession } from '../state/session'
-import { useEffect, useState } from 'react'
 
 export function FeedPage() {
   const { alerts, filtered, filters, status, error, now, reload, setFilters } = useAlerts()
-  const { lockedUntil, lock } = useSession()
-  const [tick, setTick] = useState(() => Date.now())
-  const locked = lockedUntil != null && lockedUntil > tick
-
-  useEffect(() => {
-    if (!lockedUntil) return
-    const timer = window.setInterval(() => setTick(Date.now()), 1000)
-    return () => window.clearInterval(timer)
-  }, [lockedUntil])
 
   return (
     <div className="feed">
       <FeedFilters />
-      {locked && lockedUntil && (
-        <p className="banner" role="status">
-          Too many attempts. Paused for {formatRemain(lockedUntil - tick)}.
-        </p>
-      )}
-      {error && !locked && (
+      {error && (
         <p className="banner" role="alert">
           {error}{' '}
           <button type="button" className="linkish" onClick={reload}>
@@ -54,9 +37,6 @@ export function FeedPage() {
           <p>{error || 'Check the connection and try again.'}</p>
           <button type="button" className="btn" onClick={reload}>
             Try again
-          </button>
-          <button type="button" className="btn secondary" onClick={lock}>
-            Lock
           </button>
         </div>
       ) : filtered.length === 0 ? (

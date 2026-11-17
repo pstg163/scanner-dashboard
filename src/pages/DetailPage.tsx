@@ -18,7 +18,6 @@ import {
 import { CategoryMark } from '../components/icons'
 import { alertMatchesCode, alertShortCode, deepLinkId } from '../lib/shortId'
 import { useAlerts } from '../state/alerts'
-import { useSession } from '../state/session'
 import type { Alert } from '../types'
 
 export function DetailPage() {
@@ -30,7 +29,6 @@ export function DetailPage() {
     ''
   const navigate = useNavigate()
   const { alerts, now } = useAlerts()
-  const { pin, kickout, lockFor } = useSession()
   const alertsRef = useRef(alerts)
   useEffect(() => {
     alertsRef.current = alerts
@@ -40,7 +38,7 @@ export function DetailPage() {
   const [message, setMessage] = useState<string | null>(null)
 
   useEffect(() => {
-    if (!pin || !id) return
+    if (!id) return
     const known = alertsRef.current.find((item) => alertMatchesCode(item.id, id)) ?? null
     setAlert(known)
     setPhase(known ? 'ready' : 'loading')
@@ -49,23 +47,13 @@ export function DetailPage() {
     void (async () => {
       try {
         const api = await getApi()
-        const next = await api.get(pin, id, controller.signal)
+        const next = await api.get(id, controller.signal)
         if (controller.signal.aborted) return
         setAlert(next)
         setPhase('ready')
         setMessage(null)
       } catch (err) {
         if (controller.signal.aborted || isAbortError(err)) return
-        if (isDashboardError(err) && (err.status === 401 || err.status === 403)) {
-          kickout("That PIN wasn't accepted.")
-          return
-        }
-        if (isDashboardError(err) && err.status === 429) {
-          lockFor(err.retryAfter ?? 60)
-          setMessage('Too many attempts. Wait and open this alert again.')
-          setPhase((current) => (current === 'ready' ? 'ready' : 'error'))
-          return
-        }
         if (isDashboardError(err) && err.status === 404) {
           setPhase('missing')
           return
@@ -75,7 +63,7 @@ export function DetailPage() {
       }
     })()
     return () => controller.abort()
-  }, [pin, id, kickout, lockFor])
+  }, [id])
 
   useEffect(() => {
     if (phase !== 'ready' || !alert?.id) return

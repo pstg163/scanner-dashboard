@@ -68,7 +68,7 @@ export type ClipResult = {
 }
 
 export type DashboardApi = {
-  list: (pin: string, params?: ListParams, signal?: AbortSignal) => Promise<ListResult>
-  get: (pin: string, id: string, signal?: AbortSignal) => Promise<Alert>
-  clip: (pin: string, id: string, signal?: AbortSignal) => Promise<ClipResult>
+  list: (params?: ListParams, signal?: AbortSignal) => Promise<ListResult>
+  get: (id: string, signal?: AbortSignal) => Promise<Alert>
+  clip: (id: string, signal?: AbortSignal) => Promise<ClipResult>
 }

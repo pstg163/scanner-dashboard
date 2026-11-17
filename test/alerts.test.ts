@@ -8,7 +8,6 @@ import {
   listenLiveUrl,
   priorityMeta,
 } from '../src/lib/alerts.ts'
-import { isPin } from '../src/lib/pin.ts'
 import { alertMatchesCode, alertQueryPath, alertShortCode, deepLinkId, isShortAlertCode } from '../src/lib/shortId.ts'
 import type { Alert } from '../src/types.ts'
 
@@ -97,7 +96,7 @@ describe('applyClientFilters', () => {
   })
 })
 
-describe('formatters and pin', () => {
+describe('formatters', () => {
   it('formats a recent time', () => {
     const now = Date.parse('2026-11-17T16:00:00.000Z')
     assert.equal(formatRelative('2026-11-17T15:54:00.000Z', now), '6m ago')
@@ -109,12 +108,6 @@ describe('formatters and pin', () => {
     assert.equal(priorityMeta(2).tone, 'quiet')
   })
 
-  it('accepts only 6 digits', () => {
-    assert.equal(isPin('123456'), true)
-    assert.equal(isPin('12345'), false)
-    assert.equal(isPin('1234567'), false)
-    assert.equal(isPin('12a456'), false)
-  })
 })
 
 describe('listenLiveUrl', () => {

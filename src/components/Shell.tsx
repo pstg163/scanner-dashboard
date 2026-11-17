@@ -1,12 +1,12 @@
 import type { ReactNode } from 'react'
-import { Link, NavLink, useLocation } from 'react-router-dom'
+import { Link, NavLink, useLocation, useSearchParams } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { formatRelative } from '../lib/alerts'
+import { deepLinkId } from '../lib/shortId'
 import { audioReady, playChime, readMuted, unlockAudio, writeMuted } from '../lib/chime'
 import { useAlerts } from '../state/alerts'
-import { useSession } from '../state/session'
 import { useTheme } from '../lib/theme'
-import { IconList, IconLock, IconMap, IconMuted, IconSound } from './icons'
+import { IconList, IconMap, IconMuted, IconSound } from './icons'
 import { SampleBanner } from './Filters'
 
 export function Shell({ children }: { children: ReactNode }) {
@@ -61,11 +61,14 @@ function SoundBar() {
 }
 
 function Header() {
-  const { lock } = useSession()
   const { refreshing, lastSync, now, status } = useAlerts()
   const { pathname } = useLocation()
+  const [search] = useSearchParams()
   const back = useBackTarget()
-  const onDetail = pathname.startsWith('/alert/')
+  const onDetail =
+    pathname.startsWith('/alert/') ||
+    pathname.startsWith('/a/') ||
+    Boolean(deepLinkId(`?${search.toString()}`, typeof window === 'undefined' ? '' : window.location.hash))
   const [muted, setMuted] = useState(readMuted)
 
   function toggleMute() {
@@ -108,9 +111,6 @@ function Header() {
           aria-label={muted ? 'Unmute alert sounds' : 'Mute alert sounds'}
         >
           {muted ? <IconMuted /> : <IconSound />}
-        </button>
-        <button type="button" className="icon-btn" onClick={lock} aria-label="Lock dashboard">
-          <IconLock />
         </button>
       </div>
     </header>

@@ -25,8 +25,8 @@ export function isAbortError(err: unknown): boolean {
 
 export function errorMessage(err: unknown): string {
   if (isDashboardError(err)) {
-    if (err.status === 401 || err.status === 403) return "That PIN wasn't accepted."
-    if (err.status === 429) return 'Too many attempts. The keypad is paused.'
+    if (err.status === 401 || err.status === 403) return 'The dashboard did not accept that request.'
+    if (err.status === 429) return 'Too many requests. Wait a moment and try again.'
     if (err.code === 'not found') return 'That alert is no longer available.'
     if (err.code === 'no clip') return 'No audio clip for this alert.'
     if (err.status === 503) return 'The dashboard is temporarily unavailable.'
@@ -37,10 +37,10 @@ export function errorMessage(err: unknown): string {
   return 'Something went wrong.'
 }
 
-async function request(pin: string, params: URLSearchParams, signal?: AbortSignal): Promise<unknown> {
+async function request(params: URLSearchParams, signal?: AbortSignal): Promise<unknown> {
   const response = await fetch(`${functionUrl}?${params.toString()}`, {
     method: 'GET',
-    headers: dashboardHeaders(pin),
+    headers: dashboardHeaders(),
     cache: 'no-store',
     signal,
   })
@@ -77,7 +77,7 @@ function errorFrom(response: Response, body: unknown): DashboardError {
   return new DashboardError(code, response.status)
 }
 
-export async function listAlerts(pin: string, params: ListParams = {}, signal?: AbortSignal): Promise<ListResult> {
+export async function listAlerts(params: ListParams = {}, signal?: AbortSignal): Promise<ListResult> {
   const query = new URLSearchParams({ action: 'list' })
   const limit = params.limit ?? PAGE_LIMIT
   query.set('limit', String(limit))
@@ -87,20 +87,20 @@ export async function listAlerts(pin: string, params: ListParams = {}, signal?: 
   if (params.category) query.set('category', params.category)
   if (params.source_type) query.set('source_type', params.source_type)
   if (params.priority != null) query.set('priority', String(params.priority))
-  return parseList(await request(pin, query, signal), limit)
+  return parseList(await request(query, signal), limit)
 }
 
-export async function getAlert(pin: string, id: string, signal?: AbortSignal): Promise<Alert> {
+export async function getAlert(id: string, signal?: AbortSignal): Promise<Alert> {
   const query = new URLSearchParams({ action: 'get', id })
-  const body = await request(pin, query, signal)
+  const body = await request(query, signal)
   const alert = isRecord(body) ? parseAlert(body.alert) : null
   if (!alert) throw new DashboardError('bad response', 200)
   return alert
 }
 
-export async function getClip(pin: string, id: string, signal?: AbortSignal): Promise<ClipResult> {
+export async function getClip(id: string, signal?: AbortSignal): Promise<ClipResult> {
   const query = new URLSearchParams({ action: 'clip', id })
-  const body = await request(pin, query, signal)
+  const body = await request(query, signal)
   if (!isRecord(body) || typeof body.signed_url !== 'string') {
     throw new DashboardError('bad response', 200)
   }

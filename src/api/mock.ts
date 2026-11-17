@@ -336,11 +336,6 @@ const ALERTS: Alert[] = [
   }),
 ]
 
-function assertPin(pin: string): void {
-  if (!/^\d{6}$/.test(pin) || pin === '000000') {
-    throw new DashboardError('unauthorized', 401)
-  }
-}
 
 function matches(alertRow: Alert, params: ListParams): boolean {
   if (params.county && (alertRow.county ?? '').toLowerCase() !== params.county.toLowerCase()) return false
@@ -353,8 +348,7 @@ function matches(alertRow: Alert, params: ListParams): boolean {
 }
 
 export const mockApi: DashboardApi = {
-  async list(pin, params = {}) {
-    assertPin(pin)
+  async list(params = {}) {
     const limit = params.limit ?? 100
     const since = params.since ?? null
     let rows = ALERTS.filter((row) => matches(row, params))
@@ -378,14 +372,12 @@ export const mockApi: DashboardApi = {
     }
     return result
   },
-  async get(pin, id) {
-    assertPin(pin)
+  async get(id) {
     const found = ALERTS.find((row) => alertMatchesCode(row.id, id))
     if (!found) throw new DashboardError('not found', 404)
     return found
   },
-  async clip(pin, id): Promise<ClipResult> {
-    assertPin(pin)
+  async clip(id): Promise<ClipResult> {
     const found = ALERTS.find((row) => alertMatchesCode(row.id, id))
     if (!found) throw new DashboardError('not found', 404)
     if (!found.clip_path) throw new DashboardError('no clip', 404)
