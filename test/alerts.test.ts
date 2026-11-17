@@ -127,6 +127,18 @@ describe('listenLiveUrl', () => {
     assert.equal(listenLiveUrl(alert), 'https://www.broadcastify.com/listen/feed/45172')
   })
 
+  it('uses a Broadcastify playlist listen_url without a feed id', () => {
+    const url = 'https://www.broadcastify.com/calls/playlists/?uuid=3b04607c-c069-11f0-bb32-0ef97433b5f9'
+    const alert = row({
+      id: 'rss-police',
+      event_time: '2026-11-17T20:00:00.000Z',
+      source_type: 'rss',
+      source_feed_id: null,
+      listen_url: url,
+    })
+    assert.equal(listenLiveUrl(alert), url)
+  })
+
   it('builds a listen link from source_feed_id on CAD and RSS alerts', () => {
     const cad = row({
       id: 'cad-2',
