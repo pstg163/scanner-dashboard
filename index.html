@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="light">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta name="theme-color" content="#090c11" />
-    <meta name="color-scheme" content="dark" />
+    <meta name="theme-color" content="#f5f6f8" />
+    <meta name="color-scheme" content="light" />
     <meta
       name="description"
       content="Live police, fire, and EMS scanner alerts for Ontario, Seneca, Wayne, Yates, Monroe, Cayuga, and Onondaga counties."
@@ -12,8 +12,27 @@
     <meta name="robots" content="noindex" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Scanner" />
+    <script>
+      (function () {
+        var theme = 'light'
+        try {
+          var stored = localStorage.getItem('scanner-bot.theme')
+          if (stored === 'dark' || stored === 'light') theme = stored
+        } catch (e) {}
+        var root = document.documentElement
+        root.setAttribute('data-theme', theme)
+        root.style.colorScheme = theme
+        var themeColor = document.querySelector('meta[name="theme-color"]')
+        if (themeColor) themeColor.setAttribute('content', theme === 'dark' ? '#090c11' : '#f5f6f8')
+        var colorScheme = document.querySelector('meta[name="color-scheme"]')
+        if (colorScheme) colorScheme.setAttribute('content', theme)
+        var statusBar = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]')
+        if (statusBar) statusBar.setAttribute('content', theme === 'dark' ? 'black-translucent' : 'default')
+      })()
+    </script>
+    <style>html,body{color:#12161c;background:#f5f6f8}html[data-theme=dark],html[data-theme=dark] body{color:#edf2f7;background:#090c11}</style>
     <link rel="icon" href="/scanner-dashboard/favicon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/scanner-dashboard/pwa-192.png" />
     <link rel="manifest" href="/scanner-dashboard/manifest.webmanifest" />
@@ -24,8 +43,8 @@
       rel="stylesheet"
     />
     <title>Scanner Bot</title>
-    <script type="module" crossorigin src="/scanner-dashboard/assets/index-BII1OEhz.js"></script>
-    <link rel="stylesheet" crossorigin href="/scanner-dashboard/assets/index-BO_XDfrf.css">
+    <script type="module" crossorigin src="/scanner-dashboard/assets/index-C8VK0zpy.js"></script>
+    <link rel="stylesheet" crossorigin href="/scanner-dashboard/assets/index-BNhfJrc5.css">
   </head>
   <body>
     <div id="root"></div>
