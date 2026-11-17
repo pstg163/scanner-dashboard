@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { formatRemain } from '../lib/alerts'
+import { unlockAudio } from '../lib/chime'
 import { useSession } from '../state/session'
 
 const KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9'] as const
@@ -18,6 +19,7 @@ export function PinPad() {
   }, [lockedUntil])
 
   async function press(digit: string) {
+    unlockAudio()
     if (checking || locked || digits.length >= 6) return
     const next = digits + digit
     setDigits(next)

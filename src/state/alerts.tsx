@@ -21,6 +21,7 @@ import {
   mergeAlerts,
   nextPollCursor,
 } from '../lib/alerts'
+import { signalNewAlerts, unseenAlerts } from '../lib/chime'
 import { useSession } from './session'
 import type { Alert, FeedFilters, ListParams } from '../types'
 
@@ -47,6 +48,7 @@ type AlertsValue = {
   lastSync: number | null
   now: number
   reload: () => void
+  freshIds: ReadonlySet<string>
 }
 
 const AlertsContext = createContext<AlertsValue | null>(null)
@@ -63,8 +65,10 @@ export function AlertsProvider({ pin, children }: { pin: string; children: React
   const [lastSync, setLastSync] = useState<number | null>(null)
   const [now, setNow] = useState(() => Date.now())
   const [reloadToken, setReloadToken] = useState(0)
-    const pollAfterRef = useRef<string | null>(null)
+  const [freshIds, setFreshIds] = useState<ReadonlySet<string>>(() => new Set())
+  const pollAfterRef = useRef<string | null>(null)
   const hasDataRef = useRef(false)
+  const knownIdsRef = useRef<Set<string>>(new Set())
   const lockedUntilRef = useRef<number | null>(lockedUntil)
   useEffect(() => {
     lockedUntilRef.current = lockedUntil
@@ -119,7 +123,22 @@ export function AlertsProvider({ pin, children }: { pin: string; children: React
       })
     }
 
-    function apply(rows: Alert[], mode: 'replace' | 'merge') {
+    function apply(rows: Alert[], mode: 'replace' | 'merge', announce: boolean) {
+      const fresh = announce ? unseenAlerts(knownIdsRef.current, rows) : []
+      if (mode === 'replace') knownIdsRef.current = new Set(rows.map((row) => row.id))
+      else for (const row of rows) knownIdsRef.current.add(row.id)
+      if (fresh.length > 0) {
+        const ids = fresh.map((row) => row.id)
+        setFreshIds((current) => new Set([...current, ...ids]))
+        window.setTimeout(() => {
+          setFreshIds((current) => {
+            const next = new Set(current)
+            for (const id of ids) next.delete(id)
+            return next
+          })
+        }, 1600)
+        signalNewAlerts(fresh)
+      }
       setAlerts((prev) => {
         const next = mergeAlerts(prev, rows, mode)
         hasDataRef.current = next.length > 0
@@ -129,7 +148,7 @@ export function AlertsProvider({ pin, children }: { pin: string; children: React
       setLastSync(Date.now())
     }
 
-    async function drain(since: string | null, mode: 'replace' | 'merge') {
+    async function drain(since: string | null, mode: 'replace' | 'merge', announce: boolean) {
       if (inflight) return
       inflight = true
       try {
@@ -143,7 +162,7 @@ export function AlertsProvider({ pin, children }: { pin: string; children: React
             controller.signal,
           )
           if (stopped) return
-          apply(result.alerts, pageMode)
+          apply(result.alerts, pageMode, announce && pageMode === 'merge')
           const step = nextPollCursor(
             { count: result.count, limit: result.limit, pollAfter: result.pollAfter },
             cursor,
@@ -183,7 +202,7 @@ export function AlertsProvider({ pin, children }: { pin: string; children: React
       setError(null)
       pollAfterRef.current = null
       try {
-        await drain(null, 'replace')
+        await drain(null, 'replace', false)
         if (!stopped) setStatus('ready')
       } catch (err) {
         fail(err)
@@ -196,7 +215,7 @@ export function AlertsProvider({ pin, children }: { pin: string; children: React
       if (lockedUntilRef.current && Date.now() < lockedUntilRef.current) return
       setRefreshing(true)
       try {
-        await drain(pollAfterRef.current, 'merge')
+        await drain(pollAfterRef.current, 'merge', true)
       } catch (err) {
         fail(err)
       } finally {
@@ -261,6 +280,7 @@ export function AlertsProvider({ pin, children }: { pin: string; children: React
       lastSync,
       now,
       reload,
+      freshIds,
     }),
     [
       alerts,
@@ -276,6 +296,7 @@ export function AlertsProvider({ pin, children }: { pin: string; children: React
       lastSync,
       now,
       reload,
+      freshIds,
     ],
   )
 

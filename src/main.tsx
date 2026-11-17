@@ -1,10 +1,12 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import App from './App.tsx'
+import { installAudioUnlock } from './lib/chime'
 import { resolveMockFlag } from './lib/mockMode'
 import './index.css'
 
 resolveMockFlag()
+installAudioUnlock()
 
 const root = document.getElementById('root')
 if (!root) throw new Error('Missing #root')

@@ -1,17 +1,20 @@
 import { Link } from 'react-router-dom'
 import { formatEt, formatRelative, placeLine, previewLine, priorityMeta, sourceLabel } from '../lib/alerts'
+import { useAlerts } from '../state/alerts'
 import type { Alert } from '../types'
 import { CategoryMark } from './icons'
 
 export function AlertCard({ alert, now, from }: { alert: Alert; now: number; from: 'feed' | 'map' }) {
+  const { freshIds } = useAlerts()
   const tone = priorityMeta(alert.priority)
+  const fresh = freshIds.has(alert.id)
   const place = placeLine(alert)
   const preview = previewLine(alert)
   const when = alert.event_time
 
   return (
     <Link
-      className={`card tone-${tone.tone}`}
+      className={fresh ? `card tone-${tone.tone} is-fresh` : `card tone-${tone.tone}`}
       to={`/alert/${encodeURIComponent(alert.id)}`}
       state={{ from }}
     >

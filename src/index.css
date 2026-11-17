@@ -122,10 +122,18 @@ h1, h2, p { margin: 0; }
 
 .live-dot.busy { background: var(--cad); animation: none; }
 
+.top-actions {
+  margin-left: auto;
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.topbar .sync + .top-actions { margin-left: 0; }
+
 .icon-btn {
   width: 48px;
   height: 48px;
-  margin-left: auto;
   display: grid;
   place-items: center;
   border-radius: 14px;
@@ -133,7 +141,7 @@ h1, h2, p { margin: 0; }
   border: 1px solid var(--line);
 }
 
-.topbar .sync + .icon-btn { margin-left: 0; }
+.icon-btn.is-muted { color: var(--faint); }
 
 .back-link {
   min-height: 48px;
@@ -276,6 +284,16 @@ h1, h2, p { margin: 0; }
 }
 
 .card:active { background: #1b2430; }
+
+.card.is-fresh {
+  animation: card-flash 1.6s ease;
+}
+
+@keyframes card-flash {
+  0% { box-shadow: inset 0 0 0 0 rgba(255, 193, 77, 0); filter: brightness(1); }
+  18% { box-shadow: inset 0 0 0 2px rgba(255, 193, 77, 0.9); filter: brightness(1.45); }
+  100% { box-shadow: inset 0 0 0 0 rgba(255, 193, 77, 0); filter: brightness(1); }
+}
 
 .card-bar { background: var(--quiet); }
 .tone-urgent .card-bar, .detail-head.tone-urgent { box-shadow: inset 4px 0 0 var(--urgent); }

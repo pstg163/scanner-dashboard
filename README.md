@@ -123,6 +123,8 @@ Realtime is off, because the browser is not a Supabase user. The app:
 3. If `count === limit`, it immediately asks again with the new `poll_after` before waiting.
 4. Rows are merged by `id`, because a later response can be an update of an alert already on screen.
 
+A poll that contains an id the phone has not seen yet plays a chime, flashes that card, and on Android vibrates for priority 4 and 5. The first load is silent, and an update to a row already on screen is silent. Priority 5 is three short tones, priority 4 is a ding, and priority 2 is a soft tone. Minor calls can be set to Silent under Filters. The header speaker mutes every chime and remembers that choice on the phone. The browser only allows sound after a tap, so the keypad and any later tap unlock audio.
+
 County, category, priority, and source are sent to the function. Search and the 1h / 6h / 24h / 7d window are applied on the phone to the loaded rows. Alerts with no latitude or longitude stay in the list and are left off the map.
 
 Alert audio comes from `GET ?action=clip&id=<id>`, which returns a one-hour signed URL for the private `clips` bucket.

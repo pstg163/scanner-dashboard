@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useId, useState } from 'react'
 import { RANGE_LABEL } from '../lib/alerts'
+import { readMinorChime, writeMinorChime, type MinorChime } from '../lib/chime'
 import { isMockMode } from '../lib/mockMode'
 import { useAlerts } from '../state/alerts'
 import type { SourceType, TimeRange } from '../types'
@@ -105,6 +106,30 @@ function RangeControl() {
         </button>
       ))}
     </div>
+  )
+}
+
+function MinorSoundSetting() {
+  const [mode, setMode] = useState<MinorChime>(readMinorChime)
+
+  function choose(next: MinorChime) {
+    writeMinorChime(next)
+    setMode(next)
+  }
+
+  return (
+    <fieldset>
+      <legend>Minor alert sound</legend>
+      <div className="choice-grid">
+        <button type="button" className={mode === 'soft' ? 'choice on' : 'choice'} onClick={() => choose('soft')}>
+          Soft
+        </button>
+        <button type="button" className={mode === 'off' ? 'choice on' : 'choice'} onClick={() => choose('off')}>
+          Silent
+        </button>
+      </div>
+      <p className="quiet">Priority 2 only. Urgent and serious tones stay on unless the header is muted.</p>
+    </fieldset>
   )
 }
 
@@ -232,6 +257,7 @@ function FilterSheet({ onClose }: { onClose: () => void }) {
             </div>
             {categories.length === 0 && <p className="quiet">Categories show up as alerts load.</p>}
           </fieldset>
+          <MinorSoundSetting />
           <button type="button" className="btn secondary" onClick={clearFilters}>
             Clear filters
           </button>

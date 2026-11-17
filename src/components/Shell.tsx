@@ -1,9 +1,11 @@
 import type { ReactNode } from 'react'
 import { Link, NavLink, useLocation } from 'react-router-dom'
+import { useState } from 'react'
 import { formatRelative } from '../lib/alerts'
+import { readMuted, unlockAudio, writeMuted } from '../lib/chime'
 import { useAlerts } from '../state/alerts'
 import { useSession } from '../state/session'
-import { IconList, IconLock, IconMap } from './icons'
+import { IconList, IconLock, IconMap, IconMuted, IconSound } from './icons'
 import { SampleBanner } from './Filters'
 
 export function Shell({ children }: { children: ReactNode }) {
@@ -43,6 +45,14 @@ function Header() {
   const { pathname } = useLocation()
   const back = useBackTarget()
   const onDetail = pathname.startsWith('/alert/')
+  const [muted, setMuted] = useState(readMuted)
+
+  function toggleMute() {
+    unlockAudio()
+    const next = !muted
+    writeMuted(next)
+    setMuted(next)
+  }
 
   return (
     <header className="topbar">
@@ -65,9 +75,20 @@ function Header() {
               : 'Live'}
         </p>
       )}
-      <button type="button" className="icon-btn" onClick={lock} aria-label="Lock dashboard">
-        <IconLock />
-      </button>
+      <div className="top-actions">
+        <button
+          type="button"
+          className={muted ? 'icon-btn is-muted' : 'icon-btn'}
+          onClick={toggleMute}
+          aria-pressed={muted}
+          aria-label={muted ? 'Unmute alert sounds' : 'Mute alert sounds'}
+        >
+          {muted ? <IconMuted /> : <IconSound />}
+        </button>
+        <button type="button" className="icon-btn" onClick={lock} aria-label="Lock dashboard">
+          <IconLock />
+        </button>
+      </div>
     </header>
   )
 }
