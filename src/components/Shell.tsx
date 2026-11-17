@@ -5,6 +5,7 @@ import { formatRelative } from '../lib/alerts'
 import { audioReady, playChime, readMuted, unlockAudio, writeMuted } from '../lib/chime'
 import { useAlerts } from '../state/alerts'
 import { useSession } from '../state/session'
+import { useTheme } from '../lib/theme'
 import { IconList, IconLock, IconMap, IconMuted, IconSound } from './icons'
 import { SampleBanner } from './Filters'
 
@@ -88,14 +89,17 @@ function Header() {
       {!onDetail && (
         <p className="sync">
           <span className={refreshing || status === 'loading' ? 'live-dot busy' : 'live-dot'} />
-          {refreshing || status === 'loading'
-            ? 'Checking'
-            : lastSync
-              ? `Synced ${formatRelative(new Date(lastSync).toISOString(), now)}`
-              : 'Live'}
+          <span className="sync-label">
+            {refreshing || status === 'loading'
+              ? 'Checking'
+              : lastSync
+                ? `Synced ${formatRelative(new Date(lastSync).toISOString(), now)}`
+                : 'Live'}
+          </span>
         </p>
       )}
       <div className="top-actions">
+        <ThemeToggle />
         <button
           type="button"
           className={muted ? 'icon-btn is-muted' : 'icon-btn'}
@@ -110,5 +114,29 @@ function Header() {
         </button>
       </div>
     </header>
+  )
+}
+
+function ThemeToggle() {
+  const [theme, setTheme] = useTheme()
+  return (
+    <div className="theme-toggle" role="group" aria-label="Color theme">
+      <button
+        type="button"
+        className={theme === 'light' ? 'on' : ''}
+        aria-pressed={theme === 'light'}
+        onClick={() => setTheme('light')}
+      >
+        Light
+      </button>
+      <button
+        type="button"
+        className={theme === 'dark' ? 'on' : ''}
+        aria-pressed={theme === 'dark'}
+        onClick={() => setTheme('dark')}
+      >
+        Dark
+      </button>
+    </div>
   )
 }

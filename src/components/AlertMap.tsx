@@ -2,6 +2,7 @@ import { useEffect, useMemo } from 'react'
 import { CircleMarker, MapContainer, Popup, TileLayer, useMap } from 'react-leaflet'
 import { Link } from 'react-router-dom'
 import { hasGeo, placeLine, priorityColor, priorityMeta } from '../lib/alerts'
+import { useTheme } from '../lib/theme'
 import type { Alert } from '../types'
 import 'leaflet/dist/leaflet.css'
 
@@ -14,8 +15,10 @@ export function AlertMap({
   alerts: Alert[]
   interactive: boolean
 }) {
+  const [theme] = useTheme()
   const located = useMemo(() => alerts.filter(hasGeo), [alerts])
   const center = located.length === 1 ? ([located[0].lat, located[0].lng] as [number, number]) : REGION
+  const stroke = theme === 'dark' ? '#f7f9fb' : '#1a1f26'
 
   return (
     <MapContainer
@@ -44,7 +47,7 @@ export function AlertMap({
             center={[alert.lat, alert.lng]}
             radius={alert.priority === 5 ? 11 : alert.priority === 4 ? 9 : 7}
             pathOptions={{
-              color: '#f7f9fb',
+              color: stroke,
               weight: 2,
               fillColor: priorityColor(alert.priority),
               fillOpacity: 0.95,
