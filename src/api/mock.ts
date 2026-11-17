@@ -1,4 +1,5 @@
 import { DashboardError } from './dashboard'
+import { alertMatchesCode } from '../lib/shortId'
 import type { Alert, ClipResult, DashboardApi, ListParams, ListResult } from '../types'
 
 const started = Date.now()
@@ -379,13 +380,13 @@ export const mockApi: DashboardApi = {
   },
   async get(pin, id) {
     assertPin(pin)
-    const found = ALERTS.find((row) => row.id === id)
+    const found = ALERTS.find((row) => alertMatchesCode(row.id, id))
     if (!found) throw new DashboardError('not found', 404)
     return found
   },
   async clip(pin, id): Promise<ClipResult> {
     assertPin(pin)
-    const found = ALERTS.find((row) => row.id === id)
+    const found = ALERTS.find((row) => alertMatchesCode(row.id, id))
     if (!found) throw new DashboardError('not found', 404)
     if (!found.clip_path) throw new DashboardError('no clip', 404)
     return { url: `${import.meta.env.BASE_URL}mock-clip.wav`, expiresIn: 3600, clipPath: found.clip_path }

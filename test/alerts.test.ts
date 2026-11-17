@@ -9,6 +9,7 @@ import {
   priorityMeta,
 } from '../src/lib/alerts.ts'
 import { isPin } from '../src/lib/pin.ts'
+import { alertMatchesCode, alertShortCode, isShortAlertCode } from '../src/lib/shortId.ts'
 import type { Alert } from '../src/types.ts'
 
 function row(partial: Partial<Alert> & Pick<Alert, 'id' | 'event_time'>): Alert {
@@ -165,5 +166,16 @@ describe('listenLiveUrl', () => {
       source_url: 'https://www.broadcastify.com/listen/feed/43015',
     })
     assert.equal(listenLiveUrl(alert), null)
+  })
+})
+
+describe('short alert codes', () => {
+  it('uses the 8-character suffix from a standard alert id', () => {
+    assert.equal(alertShortCode('1794945386471-12a33337'), '12a33337')
+    assert.equal(isShortAlertCode('12a33337'), true)
+    assert.equal(isShortAlertCode('1794945386471-12a33337'), false)
+    assert.equal(alertMatchesCode('1794945386471-12a33337', '12a33337'), true)
+    assert.equal(alertMatchesCode('1794945386471-12a33337', '1794945386471-12a33337'), true)
+    assert.equal(alertMatchesCode('1794945386471-12a33337', 'deadbeef'), false)
   })
 })

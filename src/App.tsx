@@ -27,6 +27,7 @@ function Gate() {
             <Route path="/" element={<FeedPage />} />
             <Route path="/map" element={<MapPage />} />
             <Route path="/alert/:id" element={<DetailPage />} />
+            <Route path="/a/:id" element={<DetailPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Shell>

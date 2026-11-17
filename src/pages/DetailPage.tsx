@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { getApi } from '../api'
 import { errorMessage, isAbortError, isDashboardError } from '../api/dashboard'
 import { AlertMap } from '../components/AlertMap'
@@ -16,6 +16,7 @@ import {
   sourceLabel,
 } from '../lib/alerts'
 import { CategoryMark } from '../components/icons'
+import { alertMatchesCode, isShortAlertCode } from '../lib/shortId'
 import { useAlerts } from '../state/alerts'
 import { useSession } from '../state/session'
 import type { Alert } from '../types'
@@ -23,6 +24,7 @@ import type { Alert } from '../types'
 export function DetailPage() {
   const params = useParams()
   const id = params.id ?? ''
+  const navigate = useNavigate()
   const { alerts, now } = useAlerts()
   const { pin, kickout, lockFor } = useSession()
   const alertsRef = useRef(alerts)
@@ -35,7 +37,7 @@ export function DetailPage() {
 
   useEffect(() => {
     if (!pin || !id) return
-    const known = alertsRef.current.find((item) => item.id === id) ?? null
+    const known = alertsRef.current.find((item) => alertMatchesCode(item.id, id)) ?? null
     setAlert(known)
     setPhase(known ? 'ready' : 'loading')
     setMessage(null)
@@ -70,6 +72,12 @@ export function DetailPage() {
     })()
     return () => controller.abort()
   }, [pin, id, kickout, lockFor])
+
+  useEffect(() => {
+    if (phase === 'ready' && alert && alert.id && alert.id !== id && isShortAlertCode(id)) {
+      navigate(`/alert/${encodeURIComponent(alert.id)}`, { replace: true })
+    }
+  }, [phase, alert, id, navigate])
 
   useEffect(() => {
     const title = alert?.title ? `${alert.title} · Scanner Bot` : 'Scanner Bot'
