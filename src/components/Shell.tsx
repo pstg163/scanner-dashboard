@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react'
 import { Link, NavLink, useLocation } from 'react-router-dom'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { formatRelative } from '../lib/alerts'
-import { readMuted, unlockAudio, writeMuted } from '../lib/chime'
+import { audioReady, playChime, readMuted, unlockAudio, writeMuted } from '../lib/chime'
 import { useAlerts } from '../state/alerts'
 import { useSession } from '../state/session'
 import { IconList, IconLock, IconMap, IconMuted, IconSound } from './icons'
@@ -14,6 +14,7 @@ export function Shell({ children }: { children: ReactNode }) {
   return (
     <div className="app">
       <Header />
+      <SoundBar />
       <SampleBanner />
       <main className="main">{children}</main>
       {showTabs && (
@@ -37,6 +38,25 @@ function useBackTarget(): { to: string; label: string } {
   const from = (location.state as { from?: string } | null)?.from
   if (from === 'map') return { to: '/map', label: 'Map' }
   return { to: '/', label: 'Alerts' }
+}
+
+function SoundBar() {
+  const [ready, setReady] = useState(audioReady)
+  useEffect(() => {
+    const t = window.setInterval(() => setReady(audioReady()), 1000)
+    return () => window.clearInterval(t)
+  }, [])
+  function test() {
+    unlockAudio()
+    playChime('ding')
+    window.setTimeout(() => setReady(audioReady()), 300)
+  }
+  return (
+    <div className={ready ? 'soundbar ok' : 'soundbar off'}>
+      <span>{ready ? 'Alert sounds on' : 'Sound is blocked until you click'}</span>
+      <button type="button" onClick={test}>{ready ? 'Test sound' : 'Turn on sound'}</button>
+    </div>
+  )
 }
 
 function Header() {

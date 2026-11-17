@@ -77,6 +77,10 @@ function context(): AudioContext | null {
   return audio
 }
 
+export function audioReady(): boolean {
+  return audio != null && audio.state === 'running'
+}
+
 /** Create or resume the audio graph. Call this from a tap so mobile browsers allow later chimes. */
 export function unlockAudio(): void {
   const ctx = context()

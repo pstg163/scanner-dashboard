@@ -641,3 +641,8 @@ h1, h2, p { margin: 0; }
     transition: none !important;
   }
 }
+
+.soundbar { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:8px 16px; font-size:14px; }
+.soundbar.off { background:#7a1f1f; color:#fff; }
+.soundbar.ok { background:rgba(127,127,127,0.12); }
+.soundbar button { border:0; border-radius:999px; padding:6px 14px; font-weight:600; cursor:pointer; background:#fff; color:#111; }
