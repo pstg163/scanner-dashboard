@@ -2,10 +2,12 @@ import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 import {
   applyClientFilters,
+  displayTown,
   formatRelative,
   mergeAlerts,
   nextPollCursor,
   listenLiveUrl,
+  mapUrl,
   priorityMeta,
 } from '../src/lib/alerts.ts'
 import { alertMatchesCode, alertQueryPath, alertShortCode, deepLinkId, isShortAlertCode } from '../src/lib/shortId.ts'
@@ -159,6 +161,62 @@ describe('listenLiveUrl', () => {
       source_url: 'https://www.broadcastify.com/listen/feed/43015',
     })
     assert.equal(listenLiveUrl(alert), null)
+  })
+})
+
+describe('mapUrl', () => {
+  it('uses an explicit map field first', () => {
+    const alert = row({
+      id: 'cad-map',
+      event_time: '2026-11-19T19:01:36.000Z',
+      source_type: 'cad',
+      address: 'RIDGE RD',
+      town: 'TFB',
+      county: 'Onondaga',
+      map: 'https://maps.google.com/?q=RIDGE+RD,Onondaga+County,+NY',
+    })
+    assert.equal(alert.map && mapUrl(alert), alert.map)
+  })
+
+  it('uses coordinates when present', () => {
+    const alert = row({
+      id: 'monroe-fire',
+      event_time: '2026-11-19T19:01:34.000Z',
+      source_type: 'rss',
+      address: '250 MILE CROSSING BLVD (WESTSIDE EYE CARE)',
+      town: 'Gates',
+      county: 'Monroe',
+      lat: 43.1503,
+      lng: -77.7275,
+    })
+    assert.equal(mapUrl(alert), 'https://maps.google.com/?q=43.1503,-77.7275')
+  })
+
+  it('builds a search URL for Onondaga alerts without coordinates', () => {
+    const alert = row({
+      id: '1795114896079-d7362424',
+      event_time: '2026-11-19T19:01:36.000Z',
+      source_type: 'cad',
+      address: 'RIDGE RD',
+      town: 'TFB',
+      county: 'Onondaga',
+      lat: null,
+      lng: null,
+    })
+    const url = mapUrl(alert)
+    assert.ok(url)
+    assert.match(url!, /maps\.google\.com/)
+    const decoded = decodeURIComponent(url!)
+    assert.match(decoded, /RIDGE RD/)
+    assert.match(decoded, /Town of Fabius/)
+    assert.match(decoded, /Onondaga County, NY/)
+  })
+
+  it('maps known iCAD codes and leaves unknown codes uppercase', () => {
+    assert.equal(displayTown('TFB'), 'Town of Fabius')
+    assert.equal(displayTown('Tfb'), 'Town of Fabius')
+    assert.equal(displayTown('TZZ'), 'TZZ')
+    assert.equal(displayTown('Syracuse'), 'Syracuse')
   })
 })
 

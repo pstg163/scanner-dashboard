@@ -12,6 +12,7 @@ import {
   priorityMeta,
   relatedAlerts,
   listenLiveUrl,
+  mapUrl,
   sourceButtonLabel,
   sourceLabel,
 } from '../lib/alerts'
@@ -115,6 +116,7 @@ export function DetailPage() {
     .map((tag) => tag.trim())
     .filter(Boolean)
   const listen = listenLiveUrl(alert)
+  const mapHref = mapUrl(alert)
 
   return (
     <article className="detail">
@@ -157,7 +159,7 @@ export function DetailPage() {
 
       <ClipPlayer key={alert.id} id={alert.id} clipPath={alert.clip_path} />
 
-      {(alert.source_url || listen) && (
+      {(alert.source_url || listen || mapHref) && (
         <div className="detail-actions">
           {alert.source_url && (
             <a className="btn" href={alert.source_url} target="_blank" rel="noopener noreferrer">
@@ -169,6 +171,11 @@ export function DetailPage() {
               Listen live
             </a>
           )}
+          {mapHref && (
+            <a className="btn secondary" href={mapHref} target="_blank" rel="noopener noreferrer">
+              Open map
+            </a>
+          )}
         </div>
       )}
 
@@ -178,8 +185,14 @@ export function DetailPage() {
           <div className="detail-map">
             <AlertMap key={alert.id} alerts={[alert]} interactive={false} />
           </div>
+        ) : mapHref ? (
+          <p>
+            <a href={mapHref} target="_blank" rel="noopener noreferrer">
+              Open in Google Maps
+            </a>
+          </p>
         ) : (
-          <p className="quiet">No coordinates for this alert. It stays in the list only.</p>
+          <p className="quiet">No map is available for this alert.</p>
         )}
       </section>
 

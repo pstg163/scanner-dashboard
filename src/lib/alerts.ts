@@ -111,8 +111,63 @@ export function priorityColor(priority: number | null): string {
   return '#c5d0dc'
 }
 
+// Onondaga iCAD municipality codes (same mapping as the monitor).
+const ONONDAGA_MUN: Record<string, string> = {
+  SYR: 'Syracuse',
+  TSL: 'Salina',
+  TCM: 'Camillus',
+  TDW: 'DeWitt',
+  TMA: 'Manlius',
+  TCI: 'Cicero',
+  TCL: 'Clay',
+  TLY: 'Lysander',
+  TVB: 'Van Buren',
+  TON: 'Onondaga',
+  TPO: 'Pompey',
+  TSK: 'Skaneateles',
+  TEL: 'Elbridge',
+  TMR: 'Marcellus',
+  TOT: 'Otisco',
+  TSP: 'Spafford',
+  TTU: 'Tully',
+  TLA: 'LaFayette',
+  TFB: 'Town of Fabius',
+  TFA: 'Town of Fabius',
+  TGD: 'Geddes',
+  TGE: 'Geddes',
+  VMR: 'Marcellus (V)',
+  VLI: 'Liverpool',
+  VSK: 'Skaneateles (V)',
+  VMA: 'Manlius (V)',
+  VFA: 'Fayetteville',
+  VNS: 'North Syracuse',
+  VES: 'East Syracuse',
+  VCA: 'Camillus (V)',
+  VMI: 'Minoa',
+  VTU: 'Tully (V)',
+  VSV: 'Solvay',
+  VSO: 'Solvay',
+  VBV: 'Baldwinsville',
+  VBA: 'Baldwinsville',
+  VJR: 'Jordan',
+  VJO: 'Jordan',
+  VEB: 'Elbridge (V)',
+  VEL: 'Elbridge (V)',
+}
+
+const MUN_CODE = /^(SYR|[TV][A-Za-z]{2})$/i
+
+export function displayTown(town: string | null | undefined): string {
+  const raw = (town ?? '').trim()
+  if (!raw) return ''
+  if (MUN_CODE.test(raw)) {
+    return ONONDAGA_MUN[raw.toUpperCase()] ?? raw.toUpperCase()
+  }
+  return raw
+}
+
 export function placeLine(alert: Alert): string {
-  return [alert.town, alert.county].filter(Boolean).join(', ')
+  return [displayTown(alert.town) || alert.town, alert.county].filter(Boolean).join(', ')
 }
 
 export function previewLine(alert: Alert): string {
@@ -149,6 +204,23 @@ export function sourceButtonLabel(alert: Alert): string {
 }
 
 /** Broadcastify listen page for CAD/RSS alerts (or an explicit listen_url). */
+/** Google Maps link: stored `map`, coordinates, or a search from address + town + county. */
+export function mapUrl(alert: Alert): string | null {
+  const explicit = alert.map?.trim()
+  if (explicit) return explicit
+  if (hasGeo(alert)) return `https://maps.google.com/?q=${alert.lat},${alert.lng}`
+  const parts: string[] = []
+  const address = alert.address?.trim()
+  const town = displayTown(alert.town)
+  const county = alert.county?.trim()
+  if (address) parts.push(address)
+  if (town && !parts.join(' ').toLowerCase().includes(town.toLowerCase())) parts.push(town)
+  if (!parts.length && !county) return null
+  if (county) parts.push(`${county} County, NY`)
+  else parts.push('NY')
+  return `https://maps.google.com/?q=${encodeURIComponent(parts.join(', '))}`
+}
+
 export function listenLiveUrl(alert: Alert): string | null {
   const explicit = alert.listen_url?.trim()
   if (explicit) return explicit

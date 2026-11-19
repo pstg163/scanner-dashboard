@@ -22,6 +22,7 @@ export type Alert = {
   source_name: string | null
   source_url: string | null
   listen_url?: string | null
+  map?: string | null
   clip_path: string | null
   dedupe_key: string | null
   is_update: boolean
