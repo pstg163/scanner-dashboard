@@ -2,6 +2,7 @@ import { useEffect, useMemo } from 'react'
 import { CircleMarker, MapContainer, Popup, TileLayer, useMap } from 'react-leaflet'
 import { Link } from 'react-router-dom'
 import { hasGeo, placeLine, priorityColor, priorityMeta } from '../lib/alerts'
+import { alertQueryPath, alertShortCode } from '../lib/shortId'
 import { useTheme } from '../lib/theme'
 import type { Alert } from '../types'
 import 'leaflet/dist/leaflet.css'
@@ -61,7 +62,7 @@ export function AlertMap({
                     {tone.label}
                     {placeLine(alert) ? ` · ${placeLine(alert)}` : ''}
                   </p>
-                  <Link to={`/alert/${encodeURIComponent(alert.id)}`} state={{ from: 'map' }}>
+                  <Link to={alertQueryPath(alertShortCode(alert.id))} state={{ from: 'map' }}>
                     Open alert
                   </Link>
                 </div>

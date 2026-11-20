@@ -2,14 +2,21 @@ import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
 import {
   applyClientFilters,
+  appleMapsUrl,
   displayTown,
+  formatEtLong,
+  formatIncidentStamp,
   formatRelative,
+  formatStoredTime,
+  incidentInfoRows,
   mergeAlerts,
   nextPollCursor,
   listenLiveUrl,
+  locationSearchQuery,
   mapUrl,
   priorityMeta,
 } from '../src/lib/alerts.ts'
+import { readAlertExtras } from '../src/lib/alertExtras.ts'
 import { alertMatchesCode, alertQueryPath, alertShortCode, deepLinkId, isShortAlertCode } from '../src/lib/shortId.ts'
 import type { Alert } from '../src/types.ts'
 
@@ -212,11 +219,96 @@ describe('mapUrl', () => {
     assert.match(decoded, /Onondaga County, NY/)
   })
 
+  it('builds an Apple Maps pin from coordinates and a search without them', () => {
+    const located = row({
+      id: 'pin',
+      event_time: '2026-11-19T19:01:34.000Z',
+      address: '250 Mile Crossing Blvd',
+      town: 'Gates',
+      county: 'Monroe',
+      lat: 43.1503,
+      lng: -77.7275,
+    })
+    assert.match(appleMapsUrl(located)!, /maps\.apple\.com\/\?ll=43\.1503,-77\.7275/)
+    const search = row({
+      id: 'search',
+      event_time: '2026-11-19T19:01:36.000Z',
+      address: 'RIDGE RD',
+      town: 'TFB',
+      county: 'Onondaga',
+    })
+    const url = appleMapsUrl(search)
+    assert.ok(url)
+    assert.match(decodeURIComponent(url!), /RIDGE RD, Town of Fabius, Onondaga County, NY/)
+    assert.equal(locationSearchQuery(search), 'RIDGE RD, Town of Fabius, Onondaga County, NY')
+  })
+
   it('maps known iCAD codes and leaves unknown codes uppercase', () => {
     assert.equal(displayTown('TFB'), 'Town of Fabius')
     assert.equal(displayTown('Tfb'), 'Town of Fabius')
     assert.equal(displayTown('TZZ'), 'TZZ')
     assert.equal(displayTown('Syracuse'), 'Syracuse')
+  })
+})
+
+describe('incident detail fields', () => {
+  it('formats an Eastern timestamp with the incident prefix', () => {
+    assert.equal(formatIncidentStamp('2026-11-20T02:29:00.000Z'), 'Incident Nov 19, 2026 9:29 PM EST')
+    assert.equal(formatEtLong('2026-11-20T02:29:00.000Z'), 'Nov 19, 2026 9:29 PM EST')
+    assert.equal(formatStoredTime('2026-11-19 17:46:31 EST'), 'Nov 19, 2026 5:46 PM EST')
+    assert.equal(
+      formatStoredTime('11/19/26 20:48', '2026-11-20T02:20:48.000Z'),
+      'Nov 19, 2026 9:20 PM EST',
+    )
+  })
+
+  it('omits empty incident rows and keeps cross streets when present', () => {
+    const full = row({
+      id: 'cad',
+      event_time: '2026-11-20T02:20:48.000Z',
+      address: 'E RAYNOR AVE',
+      town: 'Syracuse',
+      county: 'Onondaga',
+      place: '108 BLDG',
+      cross_streets: 'S SALINA ST & MONTGOMERY ST',
+      agency: 'Syracuse Police',
+      source_name: 'Onondaga 911 iCAD',
+      status: 'ENROUTE',
+      clip_path: null,
+    })
+    const labels = incidentInfoRows(full).map((item) => item.label)
+    assert.deepEqual(labels, ['Address', 'Cross streets', 'Township / City', 'County', 'Agency / Source', 'Status', 'Dispatch time'])
+    assert.equal(incidentInfoRows(full)[0]?.value, 'E RAYNOR AVE (108 BLDG)')
+    assert.match(incidentInfoRows(full).find((item) => item.label === 'Agency / Source')!.value, /Syracuse Police/)
+
+    const sparse = row({
+      id: 'sparse',
+      event_time: 'not-a-date',
+      address: null,
+      town: null,
+      county: null,
+      source_name: null,
+    })
+    assert.deepEqual(incidentInfoRows(sparse), [])
+  })
+
+  it('reads display fields from the row or from raw', () => {
+    const extras = readAlertExtras({
+      listen_url: ' https://www.broadcastify.com/listen/feed/1 ',
+      raw: {
+        map: 'https://maps.google.com/?q=1',
+        cross_streets: 'MAIN ST & ELM ST',
+        agency: 'Victor Fire',
+        place: '',
+        incident_id: 'ONT-1',
+      },
+    })
+    assert.equal(extras.listen_url, 'https://www.broadcastify.com/listen/feed/1')
+    assert.equal(extras.cross_streets, 'MAIN ST & ELM ST')
+    assert.equal(extras.agency, 'Victor Fire')
+    assert.equal(extras.place, null)
+    assert.equal(extras.incident_id, 'ONT-1')
+    assert.equal(extras.map, 'https://maps.google.com/?q=1')
   })
 })
 

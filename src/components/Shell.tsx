@@ -6,39 +6,18 @@ import { deepLinkId } from '../lib/shortId'
 import { audioReady, playChime, readMuted, unlockAudio, writeMuted } from '../lib/chime'
 import { useAlerts } from '../state/alerts'
 import { useTheme } from '../lib/theme'
-import { IconList, IconMap, IconMuted, IconSound } from './icons'
+import { IconMuted, IconRadio, IconSound } from './icons'
 import { SampleBanner } from './Filters'
 
 export function Shell({ children }: { children: ReactNode }) {
-  const { pathname } = useLocation()
-  const showTabs = pathname === '/' || pathname === '/map'
   return (
     <div className="app">
       <Header />
       <SoundBar />
       <SampleBanner />
       <main className="main">{children}</main>
-      {showTabs && (
-        <nav className="tabbar" aria-label="Primary">
-          <NavLink to="/" end className={({ isActive }) => (isActive ? 'on' : '')}>
-            <IconList />
-            Alerts
-          </NavLink>
-          <NavLink to="/map" className={({ isActive }) => (isActive ? 'on' : '')}>
-            <IconMap />
-            Map
-          </NavLink>
-        </nav>
-      )}
     </div>
   )
-}
-
-function useBackTarget(): { to: string; label: string } {
-  const location = useLocation()
-  const from = (location.state as { from?: string } | null)?.from
-  if (from === 'map') return { to: '/map', label: 'Map' }
-  return { to: '/', label: 'Alerts' }
 }
 
 function SoundBar() {
@@ -64,7 +43,6 @@ function Header() {
   const { refreshing, lastSync, now, status } = useAlerts()
   const { pathname } = useLocation()
   const [search] = useSearchParams()
-  const back = useBackTarget()
   const onDetail =
     pathname.startsWith('/alert/') ||
     pathname.startsWith('/a/') ||
@@ -80,27 +58,32 @@ function Header() {
 
   return (
     <header className="topbar">
-      {onDetail ? (
-        <Link to={back.to} className="back-link">
-          {back.label}
-        </Link>
-      ) : (
-        <Link to="/" className="wordmark">
+      <Link to="/" className="brand-lockup">
+        <span className="brand-badge sm" aria-hidden="true">
+          <IconRadio size={16} />
+        </span>
+        <span className="wordmark">
           Scanner <span>Bot</span>
+        </span>
+      </Link>
+      <nav className="topnav" aria-label="Primary">
+        <Link to="/" className={onDetail || pathname !== '/' ? 'nav-link' : 'nav-link on'} aria-current={onDetail || pathname !== '/' ? undefined : 'page'}>
+          Alerts
         </Link>
-      )}
-      {!onDetail && (
-        <p className="sync">
-          <span className={refreshing || status === 'loading' ? 'live-dot busy' : 'live-dot'} />
-          <span className="sync-label">
-            {refreshing || status === 'loading'
-              ? 'Checking'
-              : lastSync
-                ? `Synced ${formatRelative(new Date(lastSync).toISOString(), now)}`
-                : 'Live'}
-          </span>
-        </p>
-      )}
+        <NavLink to="/map" className={({ isActive }) => (isActive ? 'nav-link on' : 'nav-link')}>
+          Map
+        </NavLink>
+      </nav>
+      <p className="sync">
+        <span className={refreshing || status === 'loading' ? 'live-dot busy' : 'live-dot'} />
+        <span className="sync-label">
+          {refreshing || status === 'loading'
+            ? 'Checking'
+            : lastSync
+              ? `Synced ${formatRelative(new Date(lastSync).toISOString(), now)}`
+              : 'Live'}
+        </span>
+      </p>
       <div className="top-actions">
         <ThemeToggle />
         <button

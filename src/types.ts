@@ -23,6 +23,15 @@ export type Alert = {
   source_url: string | null
   listen_url?: string | null
   map?: string | null
+  cross_streets?: string | null
+  agency?: string | null
+  place?: string | null
+  incident_id?: string | null
+  call_type?: string | null
+  cad_time?: string | null
+  status?: string | null
+  transmission_time?: string | null
+  correction_note?: string | null
   clip_path: string | null
   dedupe_key: string | null
   is_update: boolean
