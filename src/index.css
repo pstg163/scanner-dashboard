@@ -993,7 +993,14 @@ html[data-theme="dark"] .soundbar.off { background:#3a1c1a; color:#ffd0cb; borde
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
-.info-list dd { margin: 0; font-size: 18px; line-height: 1.35; }
+.info-list dd {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.35;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
 
 .map-panel { min-height: 0; }
 .incident-map {
