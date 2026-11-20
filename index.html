@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta name="theme-color" content="#f5f6f8" />
+    <meta name="theme-color" content="#f3f1ec" />
     <meta name="color-scheme" content="light" />
     <meta
       name="description"
@@ -25,7 +25,7 @@
         root.setAttribute('data-theme', theme)
         root.style.colorScheme = theme
         var themeColor = document.querySelector('meta[name="theme-color"]')
-        if (themeColor) themeColor.setAttribute('content', theme === 'dark' ? '#090c11' : '#f5f6f8')
+        if (themeColor) themeColor.setAttribute('content', theme === 'dark' ? '#121418' : '#f3f1ec')
         var colorScheme = document.querySelector('meta[name="color-scheme"]')
         if (colorScheme) colorScheme.setAttribute('content', theme)
         var statusBar = document.querySelector('meta[name="apple-mobile-web-app-status-bar-style"]')
@@ -33,8 +33,8 @@
       })()
     </script>
     <style>
-      html, body { background: #f5f6f8; color: #12161c; }
-      html[data-theme="dark"], html[data-theme="dark"] body { background: #090c11; color: #edf2f7; }
+      html, body { background: #f3f1ec; color: #172033; }
+      html[data-theme="dark"], html[data-theme="dark"] body { background: #121418; color: #f2f4f7; }
     </style>
     <link rel="icon" href="%BASE_URL%favicon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="%BASE_URL%pwa-192.png" />
@@ -42,7 +42,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
     <title>Scanner Bot</title>

@@ -3,8 +3,8 @@ import { useEffect, useState } from 'react'
 export type Theme = 'light' | 'dark'
 
 export const THEME_KEY = 'scanner-bot.theme'
-export const LIGHT_THEME_COLOR = '#f5f6f8'
-export const DARK_THEME_COLOR = '#090c11'
+export const LIGHT_THEME_COLOR = '#f3f1ec'
+export const DARK_THEME_COLOR = '#121418'
 
 const EVENT = 'scanner-theme'
 

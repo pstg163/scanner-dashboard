@@ -1,35 +1,39 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { Link, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { getApi } from '../api'
 import { errorMessage, isAbortError, isDashboardError } from '../api/dashboard'
-import { AlertMap } from '../components/AlertMap'
+import { BrandCard } from '../components/BrandCard'
 import { ClipPlayer } from '../components/ClipPlayer'
+import { IncidentMap } from '../components/IncidentMap'
 import {
-  formatEt,
-  formatRelative,
-  hasGeo,
-  placeLine,
-  priorityMeta,
-  relatedAlerts,
+  appleMapsUrl,
+  formatEtLong,
+  formatIncidentStamp,
+  incidentCallout,
+  incidentEyebrow,
+  incidentHeadline,
+  incidentInfoRows,
   listenLiveUrl,
   mapUrl,
+  priorityMeta,
+  relatedAlerts,
   sourceButtonLabel,
-  sourceLabel,
+  updateText,
 } from '../lib/alerts'
-import { CategoryMark } from '../components/icons'
-import { alertMatchesCode, alertShortCode, deepLinkId } from '../lib/shortId'
+import { alertMatchesCode, alertQueryPath, alertShortCode, deepLinkId } from '../lib/shortId'
 import { useAlerts } from '../state/alerts'
 import type { Alert } from '../types'
 
 export function DetailPage() {
   const params = useParams()
   const [search] = useSearchParams()
+  const location = useLocation()
   const id =
     deepLinkId(`?${search.toString()}`, typeof window === 'undefined' ? '' : window.location.hash) ||
     params.id ||
     ''
   const navigate = useNavigate()
-  const { alerts, now } = useAlerts()
+  const { alerts } = useAlerts()
   const alertsRef = useRef(alerts)
   useEffect(() => {
     alertsRef.current = alerts
@@ -76,26 +80,40 @@ export function DetailPage() {
     navigate(`/?a=${encodeURIComponent(code)}`, { replace: true })
   }, [phase, alert, search, navigate])
 
+  const headline = alert ? incidentHeadline(alert) : ''
+
   useEffect(() => {
-    const title = alert?.title ? `${alert.title} · Scanner Bot` : 'Scanner Bot'
-    document.title = title
+    document.title = headline ? `${headline} · Scanner Bot` : 'Scanner Bot'
     return () => {
       document.title = 'Scanner Bot'
     }
-  }, [alert?.title])
+  }, [headline])
+
+  const from = (location.state as { from?: string } | null)?.from
+  const back = from === 'map' ? { to: '/map', label: 'Back to map' } : { to: '/', label: 'All alerts' }
+  const backLink = (
+    <Link to={back.to} className="brand-link">
+      {back.label}
+    </Link>
+  )
 
   if (phase === 'loading' && !alert) {
     return (
-      <div className="detail">
-        <div className="skeleton tall" />
+      <div className="page">
+        <BrandCard action={backLink} />
+        <div className="detail-grid" aria-hidden="true">
+          <div className="skeleton tall" />
+          <div className="skeleton" />
+        </div>
       </div>
     )
   }
 
   if (phase === 'missing' || !alert) {
     return (
-      <div className="detail">
-        <div className="empty">
+      <div className="page">
+        <BrandCard action={backLink} />
+        <div className="panel empty">
           <h1>Alert not found</h1>
           <p>The link may be old, or this call was removed.</p>
           <Link to="/" className="btn">
@@ -107,141 +125,145 @@ export function DetailPage() {
   }
 
   const tone = priorityMeta(alert.priority)
-  const history = relatedAlerts(alerts, alert)
-  const body = alert.transcript?.trim() || alert.summary?.trim() || alert.snippet?.trim() || ''
-  const summary = alert.summary?.trim()
-  const showSummary = Boolean(summary && summary !== body)
-  const tags = (alert.tags ?? '')
-    .split(',')
-    .map((tag) => tag.trim())
-    .filter(Boolean)
+  const history = [...relatedAlerts(alerts, alert)].reverse()
+  const callout = incidentCallout(alert)
+  const rows = incidentInfoRows(alert)
   const listen = listenLiveUrl(alert)
-  const mapHref = mapUrl(alert)
+  const googleHref = mapUrl(alert)
+  const appleHref = appleMapsUrl(alert)
+  const stamp = formatIncidentStamp(alert.event_time)
+  const idLabel = alert.incident_id?.trim() || alertShortCode(alert.id)
+  const showSource =
+    Boolean(alert.source_url) && alert.source_url !== listen
 
   return (
-    <article className="detail">
+    <article className="page">
+      <BrandCard action={backLink} />
       {message && (
         <p className="banner" role="alert">
           {message}
         </p>
       )}
-      <header className={`detail-head tone-${tone.tone}`}>
-        <div className="detail-kicker">
-          <CategoryMark category={alert.category} />
-          <span>{alert.category || 'Alert'}</span>
-        </div>
-        <h1>{alert.title || 'Untitled alert'}</h1>
-        <p className="detail-place">{placeLine(alert) || 'County not set'}</p>
-        {alert.address && <p className="detail-address">{alert.address}</p>}
-        <p className="detail-when">
-          <span>{formatRelative(alert.event_time, now)}</span>
-          <span>{formatEt(alert.event_time, now)}</span>
-        </p>
-        <div className="badges">
-          <span className={`badge ${tone.tone}`}>{tone.label}</span>
-          <span className={`badge ${alert.source_type}`}>{sourceLabel(alert.source_type)}</span>
-          {alert.source_name && <span className="badge">{alert.source_name}</span>}
-          {alert.is_update && <span className="badge">Update</span>}
-          {alert.is_merged && <span className="badge">Merged</span>}
-        </div>
-      </header>
-
-      {showSummary && (
-        <section>
-          <h2>Summary</h2>
-          <p className="prose">{summary}</p>
-        </section>
-      )}
-      <section>
-        <h2>{alert.transcript?.trim() ? 'Transcript' : 'Summary'}</h2>
-        <p className="prose">{body || 'No transcript or summary was stored for this alert.'}</p>
-      </section>
-
-      <ClipPlayer key={alert.id} id={alert.id} clipPath={alert.clip_path} />
-
-      {(alert.source_url || listen || mapHref) && (
-        <div className="detail-actions">
-          {alert.source_url && (
-            <a className="btn" href={alert.source_url} target="_blank" rel="noopener noreferrer">
-              {sourceButtonLabel(alert)}
-            </a>
-          )}
-          {listen && listen !== alert.source_url && (
-            <a className="btn secondary" href={listen} target="_blank" rel="noopener noreferrer">
-              Listen live
-            </a>
-          )}
-          {mapHref && (
-            <a className="btn secondary" href={mapHref} target="_blank" rel="noopener noreferrer">
-              Open map
-            </a>
-          )}
-        </div>
-      )}
-
-      <section>
-        <h2>Map</h2>
-        {hasGeo(alert) ? (
-          <div className="detail-map">
-            <AlertMap key={alert.id} alerts={[alert]} interactive={false} />
-          </div>
-        ) : mapHref ? (
-          <p>
-            <a href={mapHref} target="_blank" rel="noopener noreferrer">
-              Open in Google Maps
-            </a>
+      <div className="detail-grid">
+        <section className="panel incident-hero">
+          <p className="incident-kicker">
+            <span className="incident-dot" aria-hidden="true" />
+            <span>{incidentEyebrow(alert)}</span>
           </p>
-        ) : (
-          <p className="quiet">No map is available for this alert.</p>
-        )}
-      </section>
-
-      <section>
-        <h2>Escalations</h2>
-        {alert.escalations.length === 0 ? (
-          <p className="quiet">None recorded.</p>
-        ) : (
-          <ul className="escalations">
-            {alert.escalations.map((item) => (
-              <li key={item}>{item}</li>
-            ))}
-          </ul>
-        )}
-      </section>
-
-      <section>
-        <h2>Update history</h2>
-        {alert.is_merged && <p className="quiet">This report was merged into another call with the same incident.</p>}
-        <ol className="timeline">
-          {history.map((item) => {
-            const itemTone = priorityMeta(item.priority)
-            const current = item.id === alert.id
-            return (
-              <li key={item.id} className={current ? 'is-current' : ''}>
-                <Link to={`/alert/${encodeURIComponent(item.id)}`}>
-                  <span className="timeline-time">{formatEt(item.event_time, now)}</span>
-                  <span className="timeline-title">{item.title || item.category || 'Update'}</span>
-                  <span className={`badge ${itemTone.tone}`}>{itemTone.label}</span>
-                  {current && <span className="badge">This alert</span>}
-                </Link>
-              </li>
-            )
-          })}
-        </ol>
-      </section>
-
-      {tags.length > 0 && (
-        <section>
-          <h2>Tags</h2>
-          <div className="badges">
-            {tags.map((tag) => (
-              <span key={tag} className="badge">
-                {tag}
-              </span>
-            ))}
+          <h1>{headline}</h1>
+          {callout && <p className="incident-callout">{callout}</p>}
+          <div className="pills">
+            {idLabel && <span className="pill">{idLabel}</span>}
+            {stamp && <span className="pill">{stamp}</span>}
+            <span className={`pill ${tone.tone}`}>{tone.label}</span>
           </div>
         </section>
-      )}
+
+        <section className="panel audio-card">
+          <h2>Dispatch Audio</h2>
+          <p className="audio-meta">
+            <span>{alert.source_name?.trim() || incidentEyebrow(alert)}</span>
+            {formatEtLong(alert.event_time) && <span className="audio-when">{` · ${formatEtLong(alert.event_time)}`}</span>}
+          </p>
+          <ClipPlayer key={alert.id} id={alert.id} clipPath={alert.clip_path} />
+          {(listen || showSource) && (
+            <div className="stack-btns">
+              {listen && (
+                <a className="outline-btn" href={listen} target="_blank" rel="noopener noreferrer">
+                  Listen live
+                </a>
+              )}
+              {showSource && alert.source_url && (
+                <a className="outline-btn" href={alert.source_url} target="_blank" rel="noopener noreferrer">
+                  {sourceButtonLabel(alert)}
+                </a>
+              )}
+            </div>
+          )}
+        </section>
+
+        <section className="panel">
+          <h2>Incident Information</h2>
+          {rows.length === 0 ? (
+            <p className="quiet">No location or dispatch details were stored for this alert.</p>
+          ) : (
+            <dl className="info-list">
+              {rows.map((row) => (
+                <div key={row.label}>
+                  <dt>{row.label}</dt>
+                  <dd>{row.value}</dd>
+                </div>
+              ))}
+            </dl>
+          )}
+        </section>
+
+        <section className="panel map-panel">
+          <h2>Location Map</h2>
+          <IncidentMap key={alert.id} alert={alert} />
+          {(appleHref || googleHref) && (
+            <div className="stack-btns">
+              {appleHref && (
+                <a className="outline-btn" href={appleHref} target="_blank" rel="noopener noreferrer">
+                  Open in Apple Maps
+                </a>
+              )}
+              {googleHref && (
+                <a className="outline-btn" href={googleHref} target="_blank" rel="noopener noreferrer">
+                  Open in Google Maps
+                </a>
+              )}
+            </div>
+          )}
+        </section>
+
+        <section className="panel detail-span">
+          <h2>Incident Updates</h2>
+          <div className="updates">
+            {history.map((item) => {
+              const body = updateText(item)
+              const current = item.id === alert.id
+              const when = formatEtLong(item.event_time)
+              return (
+                <article key={item.id} className="update">
+                  {when && <p className="update-time">Update {when}</p>}
+                  {current ? (
+                    <p className="update-body">{body || 'No transcript or call notes were stored for this alert.'}</p>
+                  ) : (
+                    <Link className="update-body update-link" to={alertQueryPath(alertShortCode(item.id))}>
+                      {body || item.title || item.category || 'Update'}
+                    </Link>
+                  )}
+                  {current && alert.correction_note?.trim() && (
+                    <p className="update-note">Correction: {alert.correction_note.trim()}</p>
+                  )}
+                  {current && <span className="sr">This alert</span>}
+                </article>
+              )
+            })}
+          </div>
+          {alert.escalations.length > 0 && (
+            <p className="update-note">Escalations: {alert.escalations.join(', ')}</p>
+          )}
+          {alert.is_merged && (
+            <p className="quiet">This report was merged into another call with the same incident.</p>
+          )}
+          {alert.is_update && <p className="quiet">This alert is an update to an earlier call.</p>}
+          {(alert.tags ?? '').trim() && (
+            <div className="pills">
+              {(alert.tags ?? '')
+                .split(',')
+                .map((tag) => tag.trim())
+                .filter(Boolean)
+                .map((tag) => (
+                  <span key={tag} className="pill">
+                    {tag.replaceAll('_', ' ')}
+                  </span>
+                ))}
+            </div>
+          )}
+        </section>
+      </div>
     </article>
   )
 }

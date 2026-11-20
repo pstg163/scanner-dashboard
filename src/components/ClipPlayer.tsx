@@ -28,14 +28,15 @@ export function ClipPlayer({ id, clipPath }: { id: string; clipPath: string | nu
     return () => controller.abort()
   }, [clipPath, id])
 
-  if (!clipPath) return null
+  if (!clipPath) {
+    return <p className="quiet">No audio clip was attached.</p>
+  }
 
   return (
-    <section className="clip">
-      <h2>Radio clip</h2>
+    <div className="audio-shell">
       {phase === 'loading' && <p className="quiet">Getting the audio…</p>}
       {phase === 'error' && <p className="quiet">The clip didn’t load. Open the alert again in a moment.</p>}
-      {phase === 'ready' && url && <audio controls preload="metadata" src={url} />}
-    </section>
+      {phase === 'ready' && url && <audio controls preload="metadata" src={url} aria-label="Dispatch audio" />}
+    </div>
   )
 }

@@ -1,4 +1,5 @@
 import { dashboardHeaders, functionUrl, PAGE_LIMIT } from '../config'
+import { readAlertExtras } from '../lib/alertExtras'
 import type { Alert, ClipResult, ListParams, ListResult, SourceType } from '../types'
 
 export class DashboardError extends Error {
@@ -152,7 +153,7 @@ function parseAlert(row: unknown): Alert | null {
     source_feed_id: asStringOrNull(row.source_feed_id),
     source_name: asStringOrNull(row.source_name),
     source_url: asStringOrNull(row.source_url),
-    listen_url: asStringOrNull(row.listen_url) ?? listenUrlFromRaw(row.raw),
+    ...readAlertExtras(row),
     clip_path: asStringOrNull(row.clip_path),
     dedupe_key: asStringOrNull(row.dedupe_key),
     is_update: row.is_update === true,
@@ -163,11 +164,6 @@ function parseAlert(row: unknown): Alert | null {
     tags: asStringOrNull(row.tags),
     geocode_status: asStringOrNull(row.geocode_status),
   }
-}
-
-function listenUrlFromRaw(value: unknown): string | null {
-  if (!isRecord(value)) return null
-  return asStringOrNull(value.listen_url)
 }
 
 function asSource(value: unknown): SourceType {

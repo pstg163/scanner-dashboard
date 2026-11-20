@@ -203,12 +203,8 @@ export function sourceButtonLabel(alert: Alert): string {
   }
 }
 
-/** Broadcastify listen page for CAD/RSS alerts (or an explicit listen_url). */
-/** Google Maps link: stored `map`, coordinates, or a search from address + town + county. */
-export function mapUrl(alert: Alert): string | null {
-  const explicit = alert.map?.trim()
-  if (explicit) return explicit
-  if (hasGeo(alert)) return `https://maps.google.com/?q=${alert.lat},${alert.lng}`
+/** Address + town + county search string, or null when there is nothing to look up. */
+export function locationSearchQuery(alert: Alert): string | null {
   const parts: string[] = []
   const address = alert.address?.trim()
   const town = displayTown(alert.town)
@@ -218,7 +214,94 @@ export function mapUrl(alert: Alert): string | null {
   if (!parts.length && !county) return null
   if (county) parts.push(`${county} County, NY`)
   else parts.push('NY')
-  return `https://maps.google.com/?q=${encodeURIComponent(parts.join(', '))}`
+  return parts.join(', ')
+}
+
+/** Google Maps link: stored `map`, coordinates, or a search from address + town + county. */
+export function mapUrl(alert: Alert): string | null {
+  const explicit = alert.map?.trim()
+  if (explicit) return explicit
+  if (hasGeo(alert)) return `https://maps.google.com/?q=${alert.lat},${alert.lng}`
+  const query = locationSearchQuery(alert)
+  if (!query) return null
+  return `https://maps.google.com/?q=${encodeURIComponent(query)}`
+}
+
+/** Apple Maps link for the same place: a pin when coordinates exist, otherwise a search. */
+export function appleMapsUrl(alert: Alert): string | null {
+  const label = [alert.address?.trim(), displayTown(alert.town), alert.county?.trim()].filter(Boolean).join(', ')
+  if (hasGeo(alert)) {
+    return `https://maps.apple.com/?ll=${alert.lat},${alert.lng}&q=${encodeURIComponent(label || 'Incident')}`
+  }
+  const query = locationSearchQuery(alert)
+  if (!query) return null
+  return `https://maps.apple.com/?q=${encodeURIComponent(query)}`
+}
+
+export function incidentEyebrow(alert: Alert): string {
+  const source = alert.source_name?.trim()
+  if (source) return source
+  const county = alert.county?.trim()
+  if (county) return `${county} County Dispatch`
+  return 'Scanner dispatch'
+}
+
+export function incidentHeadline(alert: Alert): string {
+  const call = alert.call_type?.trim()
+  if (call) return call
+  const category = alert.category?.trim()
+  if (category) return category
+  return alert.title?.trim() || 'Alert'
+}
+
+export function incidentCallout(alert: Alert): string {
+  return alert.summary?.trim() || alert.snippet?.trim() || ''
+}
+
+export function incidentAddress(alert: Alert): string {
+  const address = alert.address?.trim() || ''
+  const place = alert.place?.trim() || ''
+  if (address && place && !address.toLowerCase().includes(place.toLowerCase())) {
+    return `${address} (${place})`
+  }
+  return address || place
+}
+
+export function agencyLine(alert: Alert): string {
+  const agency = alert.agency?.trim() || ''
+  const source = alert.source_name?.trim() || ''
+  if (agency && source && agency.toLowerCase() !== source.toLowerCase()) return `${agency} · ${source}`
+  return agency || source
+}
+
+export type InfoRow = { label: string; value: string }
+
+export function incidentInfoRows(alert: Alert): InfoRow[] {
+  const rows: InfoRow[] = []
+  const address = incidentAddress(alert)
+  if (address) rows.push({ label: 'Address', value: address })
+  const cross = alert.cross_streets?.trim()
+  if (cross) rows.push({ label: 'Cross streets', value: cross })
+  const town = displayTown(alert.town)
+  if (town) rows.push({ label: 'Township / City', value: town })
+  const county = alert.county?.trim()
+  if (county) rows.push({ label: 'County', value: county })
+  const agency = agencyLine(alert)
+  if (agency) rows.push({ label: 'Agency / Source', value: agency })
+  const status = alert.status?.trim()
+  if (status) rows.push({ label: 'Status', value: status })
+  const dispatch = formatStoredTime(alert.cad_time, alert.event_time) || formatEtLong(alert.event_time)
+  if (alert.clip_path) {
+    const attached = formatStoredTime(alert.transmission_time, alert.event_time) || dispatch
+    if (attached) rows.push({ label: 'Audio attached', value: attached })
+  } else if (dispatch) {
+    rows.push({ label: 'Dispatch time', value: dispatch })
+  }
+  return rows
+}
+
+export function updateText(alert: Alert): string {
+  return alert.transcript?.trim() || alert.summary?.trim() || alert.snippet?.trim() || ''
 }
 
 export function listenLiveUrl(alert: Alert): string | null {
@@ -268,6 +351,59 @@ export function formatEt(iso: string, now = Date.now()): string {
     day: 'numeric',
   }).format(date)
   return `${day}, ${clock}`
+}
+
+/** "Nov 19, 2026 9:29 PM EST" in America/New_York. */
+export function formatEtLong(iso: string): string {
+  const when = Date.parse(iso)
+  if (!Number.isFinite(when)) return ''
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/New_York',
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+    timeZoneName: 'short',
+  }).formatToParts(new Date(when))
+  const get = (type: Intl.DateTimeFormatPartTypes) => parts.find((part) => part.type === type)?.value ?? ''
+  const month = get('month')
+  const day = get('day')
+  const year = get('year')
+  const hour = get('hour')
+  const minute = get('minute')
+  const period = get('dayPeriod')
+  const zone = get('timeZoneName')
+  if (!month || !day || !year || !hour || !minute) return ''
+  return `${month} ${day}, ${year} ${hour}:${minute} ${period} ${zone}`.trim()
+}
+
+export function formatIncidentStamp(iso: string): string {
+  const stamp = formatEtLong(iso)
+  return stamp ? `Incident ${stamp}` : ''
+}
+
+function parseKnownStamp(value: string): number | null {
+  if (/^\d{4}-\d{2}-\d{2}T/.test(value)) {
+    const parsed = Date.parse(value)
+    return Number.isFinite(parsed) ? parsed : null
+  }
+  const match = value.match(/^(\d{4}-\d{2}-\d{2})[ T](\d{2}:\d{2}:\d{2})(?:\s*(EST|EDT))?$/i)
+  if (!match) return null
+  const zone = match[3]?.toUpperCase() === 'EDT' ? '-04:00' : '-05:00'
+  const parsed = Date.parse(`${match[1]}T${match[2]}${zone}`)
+  return Number.isFinite(parsed) ? parsed : null
+}
+
+/** Format an ISO time, or a "YYYY-MM-DD HH:mm:ss EST/EDT" stamp, in Eastern time. */
+export function formatStoredTime(value: string | null | undefined, fallbackIso = ''): string {
+  const raw = value?.trim()
+  if (raw) {
+    const parsed = parseKnownStamp(raw)
+    if (parsed != null) return formatEtLong(new Date(parsed).toISOString())
+  }
+  return fallbackIso ? formatEtLong(fallbackIso) : ''
 }
 
 export function formatRemain(ms: number): string {

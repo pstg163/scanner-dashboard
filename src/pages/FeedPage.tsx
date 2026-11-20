@@ -1,12 +1,14 @@
-import { FeedFilters } from '../components/Filters'
 import { AlertCard } from '../components/AlertCard'
+import { BrandCard } from '../components/BrandCard'
+import { FeedFilters } from '../components/Filters'
 import { useAlerts } from '../state/alerts'
 
 export function FeedPage() {
   const { alerts, filtered, filters, status, error, now, reload, setFilters } = useAlerts()
 
   return (
-    <div className="feed">
+    <div className="page feed">
+      <BrandCard />
       <FeedFilters />
       {error && (
         <p className="banner" role="alert">
